@@ -1,0 +1,74 @@
+C51 COMPILER V9.54   MAIN                                                                  06/01/2018 03:00:08 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE C:\Users\dell\Desktop\c文件最终\main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OB
+                    -JECTEXTEND PRINT(.\Listings\main.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <REG51.h>
+   2          #include <stdio.h>
+   3          #include <intrins.h>
+   4          
+   5          extern unsigned char std_L,std_H,endd_L,endd_H;
+   6          sbit sx=P1^3;
+   7          sbit stop=P1^0;
+   8          sbit sxcx=P1^2;
+   9          sbit allplay=P1^1;
+  10          
+  11          extern void Cpu_Init(void);
+  12          extern void ISD_Init(void);
+  13          extern void delay10(void);
+  14          extern void EAUP(void);
+  15          extern void SPI_shaoxie(void);
+  16          extern void AllPlay(void);
+  17          extern void Tem(void);
+  18          extern void ISD_SET_PLAY(unsigned char Saddl,Saddh,Eaddl,Eaddh);
+  19          extern void Time_Set(void);
+  20          
+  21          void main(void)
+  22          { 
+  23   1        Tem();
+  24   1        Time_Set();
+  25   1        Cpu_Init();
+  26   1        ISD_Init();
+  27   1        EAUP();
+  28   1      
+  29   1        while(1)
+  30   1        { 
+  31   2            
+  32   2          ISD_SET_PLAY(0,0,3,0);
+  33   2          delay10();
+  34   2          if(sx==0)                  //S7开关
+  35   2          {
+  36   3          SPI_shaoxie();
+  37   3            while(sx)
+  38   3            {
+  39   4              if(sxcx==0)             //S8按键
+  40   4                SPI_shaoxie();
+  41   4            }
+  42   3      
+  43   3          }       
+  44   2          if(allplay==0)                 //S9按键
+  45   2      
+  46   2          {AllPlay();}    
+  47   2        } 
+  48   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     56    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+C51 COMPILER V9.54   MAIN                                                                  06/01/2018 03:00:08 PAGE 2   
+
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

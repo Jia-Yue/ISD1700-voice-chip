@@ -1,0 +1,288 @@
+C51 COMPILER V9.54   SX                                                                    06/01/2018 03:00:08 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE SX
+OBJECT MODULE PLACED IN .\Objects\sx.obj
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE C:\Users\dell\Desktop\c文件最终\sx.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJE
+                    -CTEXTEND PRINT(.\Listings\sx.lst) TABS(2) OBJECT(.\Objects\sx.obj)
+
+line level    source
+
+   1          #include <REG51.h>
+   2          #include <stdio.h>
+   3          #include <intrins.h>
+   4          #define uchar unsigned char
+   5          #define uint unsigned int
+   6          
+   7          unsigned char bdata SR0_L;
+   8          unsigned char bdata SR0_H;
+   9          unsigned char bdata SR1;
+  10          
+  11          int i,j,k;
+  12          unsigned char APCL=0,APCH=0;
+  13          unsigned char std_L,std_H,endd_L,endd_H;    //设置的开始录音地址与结束录音地址
+  14          sbit CMD=SR0_L^0;
+  15          sbit FULL=SR0_L^1;
+  16          sbit PU=SR0_L^2;
+  17          sbit EOM=SR0_L^3;
+  18          sbit INTT=SR0_L^4;
+  19          sbit RDY=SR1^0;
+  20          sbit ERASE=SR1^1;
+  21          sbit PLAY=SR1^2;
+  22          sbit REC=SR1^3; 
+  23          
+  24          unsigned char ISD_SendData(unsigned char dat);
+  25          void ISD_PU(void);
+  26          void ISD_Rd_Status(void);
+  27          void ISD_WR_APC2(unsigned char apcdatl,apcdath);
+  28          void ISD_SET_PLAY(unsigned char Saddl,Saddh,Eaddl,Eaddh);
+  29          void ISD_SET_Rec(unsigned char Saddl,Saddh,Eaddl,Eaddh);
+  30          void ISD_SET_Erase(unsigned char Saddl,Saddh,Eaddl,Eaddh);
+  31          
+  32          sbit SS=P1^4;
+  33          sbit SCK=P1^7;
+  34          sbit MOSI=P1^5;
+  35          sbit MISO=P1^6;
+  36          sbit PLY=P3^4;
+  37          sbit Rec=P3^5;
+  38          sbit sx=P1^3;
+  39          sbit stop=P1^0;
+  40          sbit sxcx=P1^2;
+  41          sbit allplay=P1^1;
+  42          
+  43          void Cpu_Init(void);
+  44          void ISD_Init(void);
+  45          void delay(unsigned int t);
+  46          void delay10(void);
+  47          void EAUP(void);
+  48          extern void SPI_shaoxie(void);
+  49          extern void AllPlay(void); //首字母大写
+  50          
+  51          
+  52          
+  53          void Cpu_Init(void)
+  54          {
+C51 COMPILER V9.54   SX                                                                    06/01/2018 03:00:08 PAGE 2   
+
+  55   1        P0=P1=P2=P3=0xff;
+  56   1        TMOD=0x01;
+  57   1        EA=0;
+  58   1        
+  59   1      }
+  60          
+  61          void ISD_Init(void)
+  62          {
+  63   1        uchar i=2;
+  64   1        SS=1;
+  65   1        SCK=1;
+  66   1        MOSI=0;
+  67   1        do
+  68   1        {
+  69   2          ISD_PU();
+  70   2          delay(50);
+  71   2          ISD_Rd_Status();
+  72   2        }while(CMD||(!PU));
+  73   1        ISD_WR_APC2(0x40,0x04);
+  74   1        
+  75   1        do
+  76   1        {
+  77   2          ISD_Rd_Status();
+  78   2        }while(RDY==0);
+  79   1        do
+  80   1        {
+  81   2          delay(300);
+  82   2          delay(300);
+  83   2          i--;
+  84   2        }while(i>0);
+  85   1      }
+  86          
+  87          void EAUP(void)
+  88          { 
+  89   1        TMOD=0x66;
+  90   1        TL0=TH0=0xFF;
+  91   1        TL1=TH1=0xFF;
+  92   1        EA=1;
+  93   1        ET0=1;
+  94   1        ET1=1;
+  95   1        TR0=1;
+  96   1        TR1=1;
+  97   1      }
+  98          unsigned char ISD_SendData(unsigned char dat)
+  99          {
+ 100   1        unsigned char i,j,BUF_ISD=dat;
+ 101   1        SCK=1;
+ 102   1        SS=0;
+ 103   1        for(j=4;j>0;j--)
+ 104   1        {;}
+ 105   1      
+ 106   1        for(i=0;i<8;i++)
+ 107   1          {
+ 108   2            SCK=0;
+ 109   2            for(j=2;j>0;j--)
+ 110   2            {;}
+ 111   2            if(BUF_ISD&0x01)
+ 112   2              MOSI=1;
+ 113   2            else
+ 114   2              MOSI=0;
+ 115   2            BUF_ISD>>=1;
+ 116   2            if(MISO)
+C51 COMPILER V9.54   SX                                                                    06/01/2018 03:00:08 PAGE 3   
+
+ 117   2              BUF_ISD|=0x80;
+ 118   2            SCK=1;
+ 119   2            for(j=6;j>0;j--)
+ 120   2            {;}
+ 121   2          }
+ 122   1          MOSI=0;
+ 123   1            return(BUF_ISD);
+ 124   1      }
+ 125          
+ 126          void ISD_Rd_Status(void)
+ 127          {
+ 128   1        unsigned char i;
+ 129   1        ISD_SendData(0x05);
+ 130   1        ISD_SendData(0x00);
+ 131   1        ISD_SendData(0x00);
+ 132   1        SS=1;
+ 133   1        for(i=2;i>0;i--)
+ 134   1        {;}
+ 135   1        SR0_L=ISD_SendData(0x05);
+ 136   1        SR0_H=ISD_SendData(0x00);
+ 137   1        SR1=ISD_SendData(0x00);
+ 138   1        SS=1;
+ 139   1      }
+ 140          
+ 141          void ISD_PU(void)
+ 142          {
+ 143   1        ISD_SendData(0x01);
+ 144   1        ISD_SendData(0x00);
+ 145   1        SS=1;
+ 146   1      }
+ 147          
+ 148          void ISD_WR_APC2(unsigned char apcdatl,apcdath)
+ 149          {
+ 150   1        ISD_SendData(0x65);
+ 151   1        ISD_SendData(apcdatl);
+ 152   1        ISD_SendData(apcdath);
+ 153   1        SS=1;
+ 154   1      }
+ 155          
+ 156          
+ 157          void ISD_SET_PLAY(unsigned char Saddl,Saddh,Eaddl,Eaddh)
+ 158          {
+ 159   1        ISD_SendData(0x80);
+ 160   1        ISD_SendData(0x00);
+ 161   1        ISD_SendData(Saddl);    
+ 162   1        ISD_SendData(Saddh);
+ 163   1        ISD_SendData(Eaddl); 
+ 164   1        ISD_SendData(Eaddh);
+ 165   1        ISD_SendData(0x00);
+ 166   1        SS=1;
+ 167   1        ISD_Rd_Status();
+ 168   1      
+ 169   1        while(PLAY&&(!CMD))
+ 170   1        {
+ 171   2          ISD_Rd_Status();
+ 172   2          if(stop==0)
+ 173   2          {
+ 174   3            ISD_SendData(0x02);
+ 175   3            ISD_SendData(0x00); 
+ 176   3            SS=1; 
+ 177   3            delay10();
+ 178   3          } 
+C51 COMPILER V9.54   SX                                                                    06/01/2018 03:00:08 PAGE 4   
+
+ 179   2        }
+ 180   1      
+ 181   1      }
+ 182          
+ 183          void ISD_SET_Rec(unsigned char Saddl,Saddh,Eaddl,Eaddh)
+ 184          {
+ 185   1        ISD_SendData(0x81);
+ 186   1        ISD_SendData(0x00);
+ 187   1        ISD_SendData(Saddl);
+ 188   1        ISD_SendData(Saddh);
+ 189   1        ISD_SendData(Eaddl);
+ 190   1        ISD_SendData(Eaddh);
+ 191   1        ISD_SendData(0x00);
+ 192   1        SS=1;
+ 193   1        ISD_Rd_Status();
+ 194   1        while(REC&&(!CMD))
+ 195   1        {
+ 196   2          ISD_Rd_Status();
+ 197   2          if(stop==0)
+ 198   2          {
+ 199   3            ISD_SendData(0x02);
+ 200   3            ISD_SendData(0x00); 
+ 201   3            SS=1; 
+ 202   3            delay10();
+ 203   3          } 
+ 204   2        }
+ 205   1      }
+ 206          
+ 207          void ISD_SET_Erase(unsigned char Saddl,Saddh,Eaddl,Eaddh)
+ 208          {
+ 209   1        ISD_SendData(0x82);
+ 210   1        ISD_SendData(0x00);
+ 211   1        ISD_SendData(Saddl);
+ 212   1        ISD_SendData(Saddh);
+ 213   1        ISD_SendData(Eaddl);
+ 214   1        ISD_SendData(Eaddh);
+ 215   1        ISD_SendData(0x00);
+ 216   1        SS=1;
+ 217   1        ISD_Rd_Status();
+ 218   1        while(ERASE)
+ 219   1        {
+ 220   2          ISD_Rd_Status();
+ 221   2        }
+ 222   1      }
+ 223          
+ 224          void delay(unsigned int t)
+ 225          {
+ 226   1        for(;t>0;t--)
+ 227   1        {
+ 228   2          
+ 229   2          TH0=0xfc;
+ 230   2          
+ 231   2          TL0=0x18;
+ 232   2          TR0=1;
+ 233   2          while(TF0!=1)
+ 234   2          {;}
+ 235   2          TF0=0;
+ 236   2          TR0=0;
+ 237   2          }
+ 238   1      }
+ 239          void delay10(void)
+ 240          {
+C51 COMPILER V9.54   SX                                                                    06/01/2018 03:00:08 PAGE 5   
+
+ 241   1        for(i=5;i>0;i--)
+ 242   1        for(j=4;j>0;j--)
+ 243   1        for(k=248;k>0;k--)
+ 244   1        {;} 
+ 245   1      }
+ 246          
+ 247          void SPI_PLY(void) interrupt 1
+ 248          {
+ 249   1        ISD_SET_PLAY(std_L,std_H,endd_L,endd_H);  
+ 250   1      }
+ 251          
+ 252          void SPI_REC(void) interrupt 3
+ 253          {
+ 254   1        ISD_SET_Rec(std_L,std_H,endd_L,endd_H);
+ 255   1      }
+ 256            
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    642    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     15      22
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

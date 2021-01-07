@@ -1,0 +1,243 @@
+C51 COMPILER V9.54   TIME_SET                                                              06/01/2018 03:00:08 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE TIME_SET
+OBJECT MODULE PLACED IN .\Objects\Time_Set.obj
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE Time_Set.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\
+                    -Time_Set.lst) TABS(2) OBJECT(.\Objects\Time_Set.obj)
+
+line level    source
+
+   1          #include <reg52.h>
+   2          #include <stdio.h>
+   3          #include <absacc.h>
+   4          #include <intrins.h>
+   5          #define fosc    11.0592       //????????11.0592MHz
+   6          #define adj -17               //???????,???????
+   7          
+   8          void UART_initial(unsigned int x);
+   9          void send(unsigned char x);
+  10          signed int receiv();
+  11          void wait_bit();
+  12          extern void delay(unsigned int t);
+  13          extern void serial_initial(void);
+  14          unsigned char address_judge(unsigned char d);
+  15          void address_assign(void);
+  16          
+  17          
+  18          sbit TXD1=P2^7;
+  19          sbit RXD1=P2^6;
+  20          sbit test=P2^2;
+  21          
+  22          signed int read_buf;
+  23          extern unsigned char std_L,std_H,endd_L,endd_H;
+  24          unsigned char x; 
+  25          extern unsigned char i,j;
+  26          unsigned char d[2];
+  27          signed int read_buf;
+  28          bit RIx,TIx,error; 
+  29          unsigned char thx,tlx;
+  30          unsigned char address=0x10,DH=0;
+  31          unsigned char puterror;
+  32          
+  33          
+  34            
+  35          
+  36          void UART_initial(unsigned int x)
+  37          {
+  38   1        TR0=0;                  
+  39   1        TMOD=(TMOD & 0XF0) | 0x01;        
+  40   1        x=-(((1000000/x)/2)*fosc/12+adj);   
+  41   1        TH0=x/256;
+  42   1        TL0=x%256;
+  43   1        thx=TH0;
+  44   1        tlx=TL0;
+  45   1        RXD1=1;               
+  46   1      }
+  47          
+  48          void send(unsigned char x)
+  49          {   unsigned char i;
+  50   1          TXD1=0;                 
+  51   1          wait_bit();             
+  52   1          for(i=0;i<=7;i++)
+  53   1            {
+  54   2            TXD1=x & 0x01;       
+C51 COMPILER V9.54   TIME_SET                                                              06/01/2018 03:00:08 PAGE 2   
+
+  55   2            x=x>>1;               
+  56   2            wait_bit();           
+  57   2            }
+  58   1          TXD1=1;                 
+  59   1          wait_bit();             
+  60   1          TIx=1;                
+  61   1      }
+  62          void wait_bit()
+  63          {
+  64   1          TH0=thx;TL0=tlx;TF0=0;TR0=1;
+  65   1          while(!TF0);            
+  66   1          TR0=0;
+  67   1          TH0=thx;TL0=tlx;TF0=0;TR0=1;
+  68   1          while(!TF0);            
+  69   1          TR0=0;
+  70   1      }
+  71          signed int receiv()
+  72          {   unsigned char temp,i,x;
+  73   1          while(RXD1);          
+  74   1          TH0=thx;TL0=tlx;TF0=0;TR0=1;
+  75   1          while(!TF0);          
+  76   1          TR0=0;
+  77   1          test=1;
+  78   1          temp=(char)RXD1;
+  79   1          test=0;
+  80   1          TH0=thx;TL0=tlx;TF0=0;TR0=1;
+  81   1          while(!TF0);            
+  82   1          TR0=0;            
+  83   1          if(temp==1) return(-1);     
+  84   1      
+  85   1          for(i=0;i<=7;i++)
+  86   1          {
+  87   2            TH0=thx;TL0=tlx;TF0=0;TR0=1;
+  88   2            while(!TF0);          
+  89   2            TR0=0;
+  90   2            test=1;
+  91   2            temp=RXD1;
+  92   2            test=0;
+  93   2            x=x>>1;
+  94   2            if(RXD1) x=x | 0x80;
+  95   2            TH0=thx;TL0=tlx;TF0=0;TR0=1;
+  96   2            while(!TF0);          
+  97   2            TR0=0;      
+  98   2          }
+  99   1      
+ 100   1          TH0=thx;TL0=tlx;TF0=0;TR0=1;
+ 101   1          while(!TF0);          
+ 102   1          TR0=0;
+ 103   1          test=1;
+ 104   1          temp=RXD1;            
+ 105   1          test=0;
+ 106   1          TH0=thx;TL0=tlx;TF0=0;TR0=1;
+ 107   1          while(!TF0);            
+ 108   1          TR0=0;                  
+ 109   1          if(temp!=1) return(-1);
+ 110   1          RIx=1;               
+ 111   1          return(x);
+ 112   1      }
+ 113          
+ 114          unsigned char address_judge(unsigned char d)
+ 115          {
+ 116   1        unsigned char j;  
+C51 COMPILER V9.54   TIME_SET                                                              06/01/2018 03:00:08 PAGE 3   
+
+ 117   1        
+ 118   1        if(d>=0x00&&d<=0x09)
+ 119   1        {
+ 120   2        address=0x10;
+ 121   2        j=d-0x00;
+ 122   2        for(j;j>0;j--)
+ 123   2        address=address+0x08; 
+ 124   2        } 
+ 125   1        
+ 126   1        else if(d>=0x10&&d<=0x19)
+ 127   1          { 
+ 128   2            address=0x60;
+ 129   2            j=d-0x10;
+ 130   2            for(j;j>0;j--)
+ 131   2            address=address+0x08;
+ 132   2          }
+ 133   1        
+ 134   1        else if(d>=0x20&&d<=0x29)
+ 135   1          { 
+ 136   2            address=0xB0; 
+ 137   2            j=d-0x20;
+ 138   2            for(j;j>0;j--)
+ 139   2            address=address+0x08;
+ 140   2          }
+ 141   1        
+ 142   1        else if(d>=0x30&&d<=0x39)
+ 143   1          { 
+ 144   2            address=0x00;
+ 145   2            j=d-0x30;
+ 146   2            for(j;j>0;j--)
+ 147   2            address=address+0x08;
+ 148   2            DH=0x01;
+ 149   2          }
+ 150   1        
+ 151   1        else if(d>=0x40&&d<=0x49)
+ 152   1          { 
+ 153   2            address=0x50;
+ 154   2            j=d-0x40;
+ 155   2            for(j;j>0;j--)
+ 156   2            address=address+0x08;
+ 157   2            DH=0x01;
+ 158   2          }
+ 159   1        
+ 160   1        else if(d>=0x50&&d<=0x60)
+ 161   1          { 
+ 162   2            address=0xA0;
+ 163   2            j=d-0x50;
+ 164   2            for(j;j>0;j--)
+ 165   2            address=address+0x08;
+ 166   2            DH=0x01;
+ 167   2          }
+ 168   1        
+ 169   1        else {printf("地址输入不合法 \n"); puterror=1;}
+ 170   1        
+ 171   1        return(address);
+ 172   1      }
+ 173          
+ 174          void address_assign(void)
+ 175          {
+ 176   1        std_L=address_judge(d[0]);
+ 177   1        std_H=DH;
+ 178   1        delay(300);
+C51 COMPILER V9.54   TIME_SET                                                              06/01/2018 03:00:08 PAGE 4   
+
+ 179   1        endd_L=address_judge(d[1])-0x01;
+ 180   1        endd_H=DH;
+ 181   1      }
+ 182          
+ 183          
+ 184          
+ 185          void Time_Set (void)
+ 186          {
+ 187   1        serial_initial();
+ 188   1        UART_initial(9600); 
+ 189   1      puterror=1; 
+ 190   1      while(puterror)
+ 191   1      {
+ 192   2        puterror=0;
+ 193   2        for(j=0;j<=1;j++)
+ 194   2          {
+ 195   3            read_buf=receiv();
+ 196   3            RIx=0;
+ 197   3            d[j]=read_buf;
+ 198   3            delay(200);   
+ 199   3          nop_();
+ 200   3            if(d[j]=='\0') d[j]=0x00;
+ 201   3          } 
+ 202   2          address_assign();
+ 203   2          if(d[0]>d[1])
+ 204   2          {puterror=1;
+ 205   3          printf("地址输入顺序错误 \n");  }
+ 206   2          
+ 207   2          send(puterror);
+ 208   2            TIx=0;
+ 209   2            _nop_();
+ 210   2      }
+ 211   1          printf("赋值完毕 \n");  
+ 212   1      }
+ 213          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    715    ----
+   CONSTANT SIZE    =     47    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     10       3
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      3    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

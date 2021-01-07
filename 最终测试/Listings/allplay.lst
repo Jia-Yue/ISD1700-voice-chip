@@ -1,0 +1,45 @@
+C51 COMPILER V9.54   ALLPLAY                                                               05/31/2018 19:53:09 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE ALLPLAY
+OBJECT MODULE PLACED IN .\Objects\allplay.obj
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE C:\Users\dell\Desktop\cÎÄ¼þ×îÖÕ\allplay.c OPTIMIZE(8,SPEED) BROWSE DEBUG
+                    - OBJECTEXTEND PRINT(.\Listings\allplay.lst) TABS(2) OBJECT(.\Objects\allplay.obj)
+
+line level    source
+
+   1          #include <REG51.h>
+   2          
+   3          sbit PLY=P3^4;
+   4          extern int k;
+   5          extern void ISD_SET_PLAY(unsigned char Saddl,Saddh,Eaddl,Eaddh);
+   6          extern void delay10(void);
+   7          
+   8          
+   9          void AllPlay(void)
+  10          {
+  11   1        TL0=0xFE;
+  12   1        PLY=0; 
+  13   1        for(k=4;k>0;k--)
+  14   1          {;}
+  15   1        ISD_SET_PLAY(0x10,0,0xEF,0x01);
+  16   1        delay10();        
+  17   1        PLY=1;
+  18   1        ISD_SET_PLAY(12,0,15,0);
+  19   1        delay10();
+  20   1      }
+  21            
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     66    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
